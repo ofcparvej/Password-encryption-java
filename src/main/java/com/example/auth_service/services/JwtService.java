@@ -1,5 +1,6 @@
 package com.example.auth_service.services;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -13,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import static java.security.KeyRep.Type.SECRET;
 
@@ -40,6 +42,36 @@ public class JwtService implements CommandLineRunner {
 
     }
 
+    private Claims extractAllPayload(String token ){
+        SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+        return Jwts
+                .parser()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+    public <T> T extractClaim(String token , Function<Claims , T>claimsResolver){
+        final Claims claims = extractAllPayload(token);
+        return claimsResolver.apply(claims);
+    }
+
+
+
+    private Date extractExpirationDate(String token){
+          return extractClaim(token , Claims::getExpiration);
+    }
+
+    private String extractUsername(String token){
+        return extractClaim(token , Claims::getSubject);
+    }
+
+
+    private Boolean isTokenExpired(String token){
+         return extractExpirationDate(token).before(new Date());
+    }
+
 
     @Override
     public void run(String... args) throws Exception {
@@ -49,6 +81,8 @@ public class JwtService implements CommandLineRunner {
 
         String result = createToken(mp , "parvej");
         System.out.println("TOKEN----> "+result);
+
+        System.out.println("valid----> ?" + extractUsername(result));
 
     }
 }

@@ -27,7 +27,7 @@ public class JwtService implements CommandLineRunner {
     @Value("${jwt.secret}")
     private  String SECRET;
 
-    private String createToken(Map<String, Object> payload , String username){
+    public String createToken(Map<String, Object> payload , String username){
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiry);
         SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
@@ -42,7 +42,11 @@ public class JwtService implements CommandLineRunner {
 
     }
 
-    private Claims extractAllPayload(String token ){
+    public String createToken(String email){
+        return createToken(new HashMap<>() , email);
+    }
+
+    public Claims extractAllPayload(String token ){
         SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
         return Jwts
                 .parser()
@@ -59,16 +63,16 @@ public class JwtService implements CommandLineRunner {
 
 
 
-    private Date extractExpirationDate(String token){
+    public Date extractExpirationDate(String token){
           return extractClaim(token , Claims::getExpiration);
     }
 
-    private String extractUsername(String token){
+    public String extractUsername(String token){
         return extractClaim(token , Claims::getSubject);
     }
 
 
-    private Boolean isTokenExpired(String token){
+    public Boolean isTokenExpired(String token){
          return extractExpirationDate(token).before(new Date());
     }
 

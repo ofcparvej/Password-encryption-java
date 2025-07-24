@@ -1,9 +1,13 @@
 package com.example.auth_service.configuration;
 
+import com.example.auth_service.filters.JwtAuthFilter;
+import com.example.auth_service.services.JwtService;
 import com.example.auth_service.services.UserDetailsserviceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -15,10 +19,23 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 @EnableWebSecurity
-public class SpringSecurity  {  //cross side request forgery -> open at same time . cors
+public class SpringSecurity implements WebMvcConfigurer {  //cross side request forgery -> open at same time . cors
+
+//    @Autowired
+    private JwtAuthFilter jwtAuthFilter;
+
+    public SpringSecurity(@Lazy JwtAuthFilter jwtAuthFilter){
+        this.jwtAuthFilter = jwtAuthFilter;
+    }
+
+
+
 
     @Bean
     public UserDetailsService userDetailsService(){
@@ -37,10 +54,19 @@ public class SpringSecurity  {  //cross side request forgery -> open at same tim
 
        return http.
                csrf(csrf->csrf.disable())
+               .cors(cors->cors.disable())
                .authorizeHttpRequests(auth->auth
                        .requestMatchers("/api/v1/auth/signup/*") .permitAll()
                        .requestMatchers("/api/v1/auth/signin/*") .permitAll()
+//                       .requestMatchers("/api/v1/auth/validate") .permitAll()
                )
+               .authorizeHttpRequests(auth ->
+                       auth
+                               .requestMatchers("/api/v1/auth/validate").authenticated()
+
+               )   //middleware ..
+               .authenticationProvider(authenticationProvider())
+               .addFilterBefore(jwtAuthFilter , UsernamePasswordAuthenticationFilter.class)
                .build(); //secured all paths
    }
 
@@ -73,6 +99,11 @@ public class SpringSecurity  {  //cross side request forgery -> open at same tim
     public BCryptPasswordEncoder bCryptPasswordEncoder(){
 
     return new BCryptPasswordEncoder();
+    }
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**").allowedOrigins("http://localhost:7475").allowCredentials(true).allowedOriginPatterns("http://localhost:7475").allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS");
     }
 
 }

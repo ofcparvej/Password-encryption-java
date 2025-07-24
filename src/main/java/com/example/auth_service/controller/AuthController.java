@@ -6,6 +6,8 @@ import com.example.auth_service.dto.PassengerDto;
 import com.example.auth_service.dto.PassengerSignupRequestDto;
 import com.example.auth_service.services.AuthService;
 import com.example.auth_service.services.JwtService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,6 +41,7 @@ public class AuthController {
     }
 
     @PostMapping("/signup/passenger")
+    @CrossOrigin(origins = "http://localhost:3000")
     public ResponseEntity<PassengerDto>signUp(@RequestBody PassengerSignupRequestDto passengerSignupRequestDto ){
         PassengerDto response = authService.signupPassenger(passengerSignupRequestDto);
         System.out.println("**********************************Controller******************************** ....");
@@ -46,7 +49,8 @@ public class AuthController {
     }
 
     @PostMapping("/signin/passenger")
-    public ResponseEntity<?>signIn(@RequestBody AuthrequestDto authrequestDto , HttpServletResponse response){
+    @CrossOrigin(origins = "http://localhost:3000")
+    public ResponseEntity<?>signIn(@RequestBody AuthrequestDto authrequestDto, HttpServletRequest request, HttpServletResponse response){
         System.out.println("Req---->" + authrequestDto.getEmail() + "   " + authrequestDto.getPassword());
 //        PassengerDto response = authService.signupPassenger(passengerSignupRequestDto);
         System.out.println("**********************************SignIn Controller******************************** ....");
@@ -59,19 +63,66 @@ public class AuthController {
 
         if(authentication.isAuthenticated()){
             ResponseCookie cookie = ResponseCookie.from("JwtToken" , jwtToken)
-                    .httpOnly(true)
+                    .httpOnly(false)
                     .secure(false)  //to send to http also
                     .path("/")
                     .maxAge(cookieExpiry).build();
 
 
-            response.setHeader(HttpHeaders.SET_COOKIE, String.valueOf(cookie));
+            response.setHeader(HttpHeaders.SET_COOKIE, cookie.toString());
             return new ResponseEntity<>(jwtToken , HttpStatus.OK);
         }
         return new  ResponseEntity<>(" Auth Not successful ", HttpStatus.OK);
     }
+
+
+
+
+@GetMapping("/validate")
+public ResponseEntity<?>validate(HttpServletRequest request){
+    System.out.println("HIIII***********HIIIIII");
+        for(Cookie cookie:request.getCookies()){ //accessing cookie ...
+            System.out.println(cookie.getName() + "   " + cookie.getValue());
+        }
+        return new ResponseEntity<>(":)" , HttpStatus.OK);
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}
+
+
+
 //set response cookie in header ...
-//
+//cors => making req from diff port
+//HttpServletRequest -> has access to whole request bdy , headers , cookies and alll ... : )
+
+//INTERCEPTORS --> MIDDLEWARES .. and FILTERS in springboot ......
+
+
 
